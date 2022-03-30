@@ -17,12 +17,14 @@
 package androidx.compose.compiler.plugins.kotlin
 
 import androidx.compose.compiler.plugins.kotlin.lower.dumpSrc
+import java.io.File
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContextImpl
 import org.jetbrains.kotlin.backend.common.ir.BuiltinSymbolsBase
 import org.jetbrains.kotlin.backend.common.ir.createParameterDeclarations
+import org.jetbrains.kotlin.backend.common.serialization.DescriptorByIdSignatureFinderImpl
 import org.jetbrains.kotlin.backend.jvm.JvmGeneratorExtensionsImpl
 import org.jetbrains.kotlin.backend.jvm.JvmIrTypeSystemContext
 import org.jetbrains.kotlin.backend.jvm.serialization.JvmIdSignatureDescriptor
@@ -60,7 +62,6 @@ import org.jetbrains.kotlin.psi2ir.generators.GeneratorContext
 import org.jetbrains.kotlin.resolve.AnalyzingUtils
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedContainerSource
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
-import java.io.File
 
 @Suppress("LeakingThis")
 abstract class ComposeIrTransformTest : AbstractIrTransformTest() {
@@ -384,7 +385,7 @@ abstract class AbstractIrTransformTest : AbstractCodegenTest() {
     inner class JvmCompilation : Compilation {
         override val enabled: Boolean = true
 
-        override fun compile(files: List<KtFile>): IrModuleFragment {
+        override fun compile(files: List<KtFile>, enableUnboundSymbolGeneration: Boolean): IrModuleFragment {
             val classPath = createClasspath() + additionalPaths
             val configuration = newConfiguration()
             configuration.addJvmClasspathRoots(classPath)
@@ -424,6 +425,7 @@ abstract class AbstractIrTransformTest : AbstractCodegenTest() {
                 generatorContext.moduleDescriptor,
                 generatorContext.symbolTable,
                 generatorContext.irBuiltIns,
+                DescriptorByIdSignatureFinderImpl(generatorContext.moduleDescriptor, mangler),
                 extensions
             )
             val frontEndContext = object : TranslationPluginContext {
@@ -443,7 +445,8 @@ abstract class AbstractIrTransformTest : AbstractCodegenTest() {
                 generatorContext.symbolTable,
                 frontEndContext,
                 stubGenerator,
-                mangler
+                mangler,
+                enableIdSignatures = false
             )
 
             generatorContext.moduleDescriptor.allDependencyModules.map {
@@ -497,6 +500,9 @@ abstract class AbstractIrTransformTest : AbstractCodegenTest() {
                 expectDescriptorToSymbol = null
             )
             irLinker.postProcess()
+            if (enableUnboundSymbolGeneration) {
+                stubGenerator.unboundSymbolGeneration = true
+            }
             return irModuleFragment
         }
     }
@@ -504,7 +510,7 @@ abstract class AbstractIrTransformTest : AbstractCodegenTest() {
     // This interface enables different Compilation variants for compiler tests
     interface Compilation {
         val enabled: Boolean
-        fun compile(files: List<KtFile>): IrModuleFragment
+        fun compile(files: List<KtFile>, enableUnboundSymbolGeneration: Boolean = false): IrModuleFragment
     }
 
     enum class TruncateTracingInfoMode {

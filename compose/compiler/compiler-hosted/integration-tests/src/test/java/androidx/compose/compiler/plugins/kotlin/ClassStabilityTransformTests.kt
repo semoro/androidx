@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrReturn
-import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.statements
 import org.junit.Test
 
@@ -988,9 +987,9 @@ class ClassStabilityTransformTests : ComposeIrTransformTest() {
         val files = listOf(
             sourceFile("Test.kt", source.replace('%', '$'))
         )
-        val irModule = JvmCompilation().compile(files)
+        val irModule = JvmCompilation().compile(files, enableUnboundSymbolGeneration = true)
         val irClass = irModule.files.last().declarations.first() as IrClass
-        val classStability = StabilityInferencer(pluginContext!!).stabilityOf(irClass.defaultType)
+        val classStability = StabilityInferencer(pluginContext!!).stabilityOf(irClass)
 
         assertEquals(
             stability,
@@ -1008,7 +1007,7 @@ class ClassStabilityTransformTests : ComposeIrTransformTest() {
     ) {
         val irModule = buildModule(externalSrc, classDefSrc, dumpClasses)
         val irClass = irModule.files.last().declarations.first() as IrClass
-        val classStability = StabilityInferencer(pluginContext!!).stabilityOf(irClass.defaultType)
+        val classStability = StabilityInferencer(pluginContext!!).stabilityOf(irClass)
 
         assertEquals(
             stability,
@@ -1110,7 +1109,7 @@ class ClassStabilityTransformTests : ComposeIrTransformTest() {
         val files = listOf(
             sourceFile("Test.kt", source.replace('%', '$'))
         )
-        return JvmCompilation().compile(files)
+        return JvmCompilation().compile(files, enableUnboundSymbolGeneration = true)
     }
 
     private fun assertTransform(
