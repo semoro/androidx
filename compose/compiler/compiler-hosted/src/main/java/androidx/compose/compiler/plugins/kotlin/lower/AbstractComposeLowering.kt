@@ -311,7 +311,7 @@ abstract class AbstractComposeLowering(
     fun IrType.unboxType(): IrType? {
         val classSymbol = classOrNull ?: return null
         val klass = classSymbol.owner
-        if (!klass.isInline) return null
+        if (!klass.isValue) return null
 
         // TODO: Apply type substitutions
         val underlyingType = getUnderlyingType(klass).unboxInlineClass()
@@ -325,7 +325,7 @@ abstract class AbstractComposeLowering(
         if (type.isNullable()) return this
         val classSymbol = type.classOrNull ?: return this
         val klass = classSymbol.owner
-        if (klass.isInline) {
+        if (klass.isValue) {
             if (context.platform.isJvm()) {
                 return coerceInlineClasses(
                     this,
