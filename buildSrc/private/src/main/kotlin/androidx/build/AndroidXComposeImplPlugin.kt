@@ -39,7 +39,7 @@ import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.kotlin.dsl.apply
 import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.withType
-import org.jetbrains.kotlin.commonizer.util.transitiveClosure
+import org.jetbrains.kotlin.tooling.core.withClosure
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
@@ -417,7 +417,7 @@ private fun Project.configureLintForMultiplatformLibrary(
         val androidMain = multiplatformExtension.sourceSets.findByName("androidMain")
             ?: return@afterEvaluate
         // Get all the sourcesets androidMain transitively / directly depends on
-        val dependencies = transitiveClosure(androidMain, KotlinSourceSet::dependsOn)
+        val dependencies = androidMain.withClosure(KotlinSourceSet::dependsOn)
 
         /**
          * Helper function to add the missing sourcesets to this [VariantInputs]
